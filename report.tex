@@ -1,0 +1,192 @@
+
+\documentclass[11pt]{article} % use larger type; default would be 10pt
+\usepackage{listings}
+\usepackage[utf8]{inputenc} % set input encoding (not needed with XeLaTeX)
+\usepackage{ctex}
+%%% PAGE DIMENSIONS
+\usepackage{geometry} % to change the page dimensions
+\geometry{a4paper} % or letterpaper (US) or a5paper or....
+% \geometry{margin=2in} % for example, change the margins to 2 inches all round
+% \geometry{landscape} % set up the page for landscape
+%   read geometry.pdf for detailed page layout information
+
+\usepackage{graphicx} % support the \includegraphics command and options
+
+% \usepackage[parfill]{parskip} % Activate to begin paragraphs with an empty line rather than an indent
+
+%%% PACKAGES
+\usepackage{booktabs} % for much better looking tables
+\usepackage{array} % for better arrays (eg matrices) in maths
+\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
+% These packages are all incorporated in the memoir class to one degree or another...
+
+%%% HEADERS & FOOTERS
+\usepackage{fancyhdr} % This should be set AFTER setting up the page geometry
+\pagestyle{fancy} % options: empty , plain , fancy
+\renewcommand{\headrulewidth}{0pt} % customise the layout...
+\lhead{}\chead{}\rhead{}
+\lfoot{}\cfoot{\thepage}\rfoot{}
+
+%%% SECTION TITLE APPEARANCE
+\usepackage{sectsty}
+\allsectionsfont{\sffamily\mdseries\upshape} % (See the fntguide.pdf for font help)
+% (This matches ConTeXt defaults)
+
+%%% ToC (table of contents) APPEARANCE
+\usepackage[nottoc,notlof,notlot]{tocbibind} % Put the bibliography in the ToC
+\usepackage[titles,subfigure]{tocloft} % Alter the style of the Table of Contents
+\renewcommand{\cftsecfont}{\rmfamily\mdseries\upshape}
+\renewcommand{\cftsecpagefont}{\rmfamily\mdseries\upshape} % No bold!
+
+%%% END Article customizations
+
+%%% The "real" document content comes below...
+
+\title{Computer Networking\\ Assignment 2 report}
+\author{5120309491 Chen Shangjie}
+\date{} % Activate to display a given date or no date (if empty),
+         % otherwise the current date is printed
+
+\begin{document}
+\maketitle
+
+\section{Description \& Runtime environment}
+I implement the project in C Language and the whole system is working on Linux System.
+User can easily use my ftp client and server by command-line operations.
+The interface for both local ftp server and the real ftp server are the same, i.e,
+you can access to the real ftp server freely, as well.
+
+\section{Build \& Run}
+You may use 'cd' to move to the prj directory and type 'make' to build the whole prj.
+The executable will be located at  \verb| bin/client|
+  and  \verb| bin/server.|
+
+\textbf{ !!! Make sure you have already create 'bin/server', 'bin/client', and 'obj' those three directory 
+in the current directory.  } 
+
+Use \verb|./S <port number> |  and  \verb| ./C <host name> <port number> | to
+run the programm.
+
+\section{Command and detailed description}
+\subsection{Commands you may use:}
+\begin{itemize}
+\item\ {USER $<user name>$} (\verb|not necessary for local|)
+\item\ {PASS $<password>$} (\verb|not necessary for local|)
+\item\ {PASV} (\verb|to enter the passive mode for transmission|)
+\item\ {NLST} (\verb|list all the files and directory|)
+\item\ {DELE $<file name>$} (\verb|delete the file|)
+\item\ {RETR $<file name>$} (\verb|download file from the ftp|)
+\item\ {STOR $<file name>$} (\verb|upload file to the ftp|)
+\item\ {CWD $<dir name>$} (\verb|change the current directory|)
+\item\ {BYE} (\verb|change the current directory|)
+\end{itemize}
+Other commands will not be received by the server, the server will response 500.
+\subsection{Implementation on local server}
+\subsubsection*{NLST:}
+Invoke $system()$ the system call $ls$ and load the result to a tmp file,
+read the file and then unlink the tmp file.
+\subsubsection*{DELE:}
+Invoke $remove()$ to remove the file directly.
+\subsubsection*{CWD:}
+Invoke $chdir()$ to change the current directory. if the return value equals to 0,
+invoke $getcwd()$ to get the current directory.
+\subsubsection*{RETR \& STOR:}
+According to the FTP protocol, when there need a data transmission, we need to create another
+data socket to transfer file. The user should send the 'PASV' command first to change the mode,
+then receive the new port number provided by the server, the client will connect to the new port
+and do the transfer. At this time, use $fread()$ and $fwrite()$ to do the file operation, continue write
+data which received from the data socket to the file.
+The detailed code will not be covered in this report.
+
+\subsection{FTP protocol related}
+\subsubsection{FTP reply codes}
+Below is a summary of FTP reply codes that may be returned by an FTP server.\\
+The first digit is used to indicate one of three possible outcomes 〞 success, failure, or to indicate an error or incomplete reply:
+\begin{itemize}
+\item\ 2yz 每 Success reply
+\item\ 4yz or 5yz 每 Failure reply
+\item\ 1yz or 3yz 每 Error or Incomplete reply
+\end{itemize}
+The second digit defines the kind of error:
+\begin{itemize}
+\item\ x0z 每 Syntax. These replies refer to syntax errors.
+\item\ x1z 每 Information. Replies to requests for information.
+\item\ x2z 每 Connections. Replies referring to the control and data connections.
+\item\ x3z 每 Authentication and accounting. Replies for the login process and accounting procedures.
+\item\ x4z 每 Not defined.
+\item\ x5z 每 File system. These replies relay status codes from the server file system.
+\end{itemize}
+The third digit of the reply code is used to provide additional detail for each of the categories defined by the second digit.
+\subsubsection{About commands}
+Each command must be ended up with \verb|\r\n| (no bother to type it the program will solve it),  the specific commands can be found
+in the internet...
+
+\section{Socket Programming}
+The main process of the socket connection is showed in Figure 1.
+\begin{figure}\centering
+ \includegraphics[width=0.8\linewidth]{socket.jpg}
+\caption{Socket}
+\label{fig:res}
+\end{figure}
+
+\section{Trouble shooting \& experience}
+\subsection{About the receive command}
+There are two types of received command from the FTP server, one of them
+begin with number and space, such as '220 ', and then some words, finished with \verb|\r\n.|
+The other begin with number and '-', such as '220-' ,which means there still exist some more information
+to transfer to the client.
+
+In order to analyze the received command, I put all the received message into one buffer,
+use $strtok()$ split it into pieces by \verb|'\n'. |
+Judge every piece of command whether the fourth char of it is space, if true, end of $recv()$.
+
+The detailed implementation is in function $parse()$ within C.c .
+
+\subsection{About the data port}
+When the client send the PASV to the server, the server will send the new data port.
+The return information will be like this:
+
+227 Entering Passive Mode (h1,h2,h3,h4,p1,p2)
+
+The first four number are the IP address, then the port number. We can
+get the port number by $p1 * 256 + p2$ .
+
+\subsection{About the type}
+Some kind of file may not be correctly download, we need to change the type of FTP to binary,
+so that the format won't be a problem so that I encapsulate the TYPE command in the PASV command.
+\subsection{Some Comments}
+Working on this assignment is challenging though interesting, we can work on real FTP protocol
+which helps us understanding the SOCKET and FTP better.  After all the job is done, I really gains
+a lot.
+
+Thanks for Prof.Shen and TA's work, thanks for my classmate's help.
+
+\section{Screenshot}
+\begin{figure}\centering
+ \includegraphics[width=0.8\linewidth]{ftp.png}
+\caption{Connect with FTP server (1)}
+\end{figure}
+
+\begin{figure}\centering
+ \includegraphics[width=0.8\linewidth]{ftp2.png}
+\caption{Connect with FTP server (2)}
+\end{figure}
+
+\begin{figure}\centering
+ \includegraphics[width=0.8\linewidth]{local1.png}
+\caption{Connect with local server (1)}
+\end{figure}
+
+\begin{figure}\centering
+ \includegraphics[width=0.8\linewidth]{local2.png}
+\caption{Connect with local server (2)}
+\end{figure}
+
+\begin{figure}\centering
+ \includegraphics[width=0.8\linewidth]{local3.png}
+\caption{The local server}
+\end{figure}
+
+\end{document}
